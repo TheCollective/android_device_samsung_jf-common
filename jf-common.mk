@@ -44,8 +44,14 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
     gps.msm8960
 
+ifeq ($(NEEDS_GPS_MSB_DISABLED),true)
+    GPS_CONF := device/samsung/jf-common/gps/gps-nomsb.conf
+else
+    GPS_CONF := device/samsung/jf-common/gps/gps.conf
+endif
+
 PRODUCT_COPY_FILES += \
-    device/samsung/jf-common/gps/gps.conf:system/etc/gps.conf
+    $(GPS_CONF):/system/etc/gps.conf
 
 # Keylayouts
 PRODUCT_COPY_FILES += \
@@ -113,6 +119,9 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # QRNGD
 PRODUCT_PACKAGES += qrngd
 
+# Prepatch to fix BT/WiFi bus lockups
+PRODUCT_COPY_FILES += device/samsung/jf-common/bluetooth/bcm4335_prepatch.hcd:system/vendor/firmware/bcm4335_prepatch.hcd
+
 #common build.props
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.chipname=apq8064 \
@@ -141,7 +150,9 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.config.ehrpd=true \
     persist.omh.enabled=1 \
     persist.data_netmgrd_nint=16 \
-    lpa.decode=true \
+    lpa.decode=false \
+    tunnel.decode=true \
+    tunnel.audiovideo.decode=true \
     rild.libpath=/system/lib/libril-qc-qmi-1.so \
     ril.subscription.types=NV,RUIM \
     ro.cdma.subscribe_on_ruim_ready=true \
@@ -157,7 +168,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     persist.rild.nitz_short_ons_1="" \
     persist.rild.nitz_short_ons_2="" \
     persist.rild.nitz_short_ons_3="" \
-    ro.telephony.ril.v3=newDriverCall
+    ro.telephony.ril.v3=googleEditionSS,newDriverCall
 
 # call common msm8960
 $(call inherit-product, device/samsung/msm8960-common/msm8960.mk)
