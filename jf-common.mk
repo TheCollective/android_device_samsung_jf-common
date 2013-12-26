@@ -16,8 +16,8 @@
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
 
-## Get non-open-source specific aspects
-$(call inherit-product, vendor/samsung/jf-common/jf-common-vendor.mk)
+## (2) Also get non-open-source specific aspects if available
+$(call inherit-product-if-exists, vendor/samsung/jf-common/jf-common-vendor.mk)
 
 ## overlays
 DEVICE_PACKAGE_OVERLAYS += device/samsung/jf-common/overlay
@@ -30,15 +30,16 @@ PRODUCT_AAPT_PREF_CONFIG := xxhdpi
 TARGET_SCREEN_HEIGHT := 1920
 TARGET_SCREEN_WIDTH := 1080
 
-# Expose Irda feature
-PRODUCT_COPY_FILES += \
-    device/samsung/jf-common/etc/com.sec.feature.irda_service.xml:system/etc/permissions/com.sec.feature.irda_service.xml
-
 # Audio configuration
 PRODUCT_COPY_FILES += \
     device/samsung/jf-common/audio/snd_soc_msm_2x_Fusion3:system/etc/snd_soc_msm/snd_soc_msm_2x_Fusion3 \
     device/samsung/jf-common/audio/audio_policy.conf:system/etc/audio_policy.conf \
     frameworks/native/data/etc/android.hardware.audio.low_latency.xml:system/etc/permissions/android.hardware.audio.low_latency.xml
+
+# Wifi
+PRODUCT_COPY_FILES += \
+    device/samsung/jf-common/wpa_supplicant_overlay.conf:system/etc/wifi/wpa_supplicant_overlay.conf \
+    device/samsung/jf-common/p2p_supplicant_overlay.conf:system/etc/wifi/p2p_supplicant_overlay.conf
 
 # Media Profile
 PRODUCT_COPY_FILES += \
@@ -73,6 +74,7 @@ PRODUCT_PACKAGES += \
     initlogo.rle \
     init.bt.rc \
     init.carrier.rc \
+    init.crda.rc \
     init.qcom.rc \
     init.qcom.usb.rc \
     init.target.rc \
@@ -84,7 +86,10 @@ PRODUCT_PACKAGES += Torch
 # Wifi
 PRODUCT_PACKAGES += \
     libnetcmdiface \
-    macloader
+    macloader \
+    crda \
+    regulatory.bin \
+    linville.key.pub.pem
 
 # NFC packages
 PRODUCT_PACKAGES += \
@@ -95,11 +100,24 @@ PRODUCT_PACKAGES += \
     Tag \
     com.android.nfc_extras
 
+# IR packages
+PRODUCT_PACKAGES += \
+    consumerir.msm8960
+PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.hardware.consumerir.xml:system/etc/permissions/android.hardware.consumerir.xml
+
 # NFCEE access control + configuration
 NFCEE_ACCESS_PATH := device/samsung/jf-common/nfc/nfcee_access.xml
 PRODUCT_COPY_FILES += \
     $(NFCEE_ACCESS_PATH):system/etc/nfcee_access.xml \
     device/samsung/jf-common/nfc/libnfc-brcm.conf:system/etc/libnfc-brcm.conf
+
+# Sensors
+PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
+    frameworks/native/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
+    frameworks/native/data/etc/android.hardware.sensor.gyroscope.xml:system/etc/permissions/android.hardware.sensor.gyroscope.xml \
+    frameworks/native/data/etc/android.hardware.sensor.barometer.xml:system/etc/permissions/android.hardware.sensor.barometer.xml
 
 # Set default USB interface
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
@@ -107,9 +125,6 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
 
 # Lights
 PRODUCT_PACKAGES += lights.msm8960
-
-# Irda
-PRODUCT_PACKAGES += irda.msm8960
 
 # QC Perf
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -121,8 +136,14 @@ PRODUCT_PACKAGES += qrngd
 # Prepatch to fix BT/WiFi bus lockups
 PRODUCT_COPY_FILES += device/samsung/jf-common/bluetooth/bcm4335_prepatch.hcd:system/vendor/firmware/bcm4335_prepatch.hcd
 
+# enable repeatable keys in cwm
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.cwm.enable_key_repeat=true \
+    ro.cwm.repeatable_keys=114,115
+
 #common build.props
 PRODUCT_PROPERTY_OVERRIDES += \
+    wifi.interface=wlan0 \
     ro.chipname=apq8064 \
     ro.ril.hsxpa=1 \
     ro.ril.gprsclass=10 \
@@ -142,6 +163,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     persist.audio.speaker.location=high \
     ro.qc.sdk.audio.fluencetype=fluence \
     persist.timed.enable=true \
+    persist.fuse_sdcard=true \
     ro.emmc.sdcard.partition=17 \
     ro.use_data_netmgrd=true \
     persist.data.ds_fmc_app.mode=0 \
